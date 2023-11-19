@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CometChat } from '@cometchat-pro/chat'
 import StarBorderOutlinedIcon from '@material-ui/icons/StarBorderOutlined'
@@ -34,6 +34,11 @@ export const User = () => {
   const [isOutgoingCall, setIsOutgoingCall] = useState(false)
   const [isLive, setIsLive] = useState(false)
 
+  const scrollToEnd = useCallback(() => {
+    const elmnt = document.getElementById('messages-container')
+    elmnt.scrollTop = elmnt.scrollHeight
+  }, [])
+
   const togglerDetail = () => {
     setToggle(!toggle)
   }
@@ -61,41 +66,50 @@ export const User = () => {
       })
   }
 
-  const getUser = (UID) => {
-    CometChat.getUser(UID)
-      .then((user) => setUser(user))
-      .catch((error) => {
-        console.log('User details fetching failed with error:', error)
-      })
-  }
+  const getUser = useCallback(
+    (UID) => {
+      CometChat.getUser(UID)
+        .then((user) => setUser(user))
+        .catch((error) => {
+          console.log('User details fetching failed with error:', error)
+        })
+    },
+    [setUser],
+  )
 
-  const getMessages = (uid) => {
-    const limit = 50
+  const getMessages = useCallback(
+    (uid) => {
+      const limit = 50
 
-    const messagesRequest = new CometChat.MessagesRequestBuilder().setLimit(limit).setUID(uid).build()
+      const messagesRequest = new CometChat.MessagesRequestBuilder().setLimit(limit).setUID(uid).build()
 
-    messagesRequest
-      .fetchPrevious()
-      .then((msgs) => {
-        setMessages(msgs.filter((m) => m.type === 'text'))
-        scrollToEnd()
-      })
-      .catch((error) => console.log('Message fetching failed with error:', error))
-  }
-
-  const listenForMessage = (listenerID) => {
-    CometChat.addMessageListener(
-      listenerID,
-      new CometChat.MessageListener({
-        onTextMessageReceived: (message) => {
-          setMessages((prevState) => [...prevState, message])
+      messagesRequest
+        .fetchPrevious()
+        .then((msgs) => {
+          setMessages(msgs.filter((m) => m.type === 'text'))
           scrollToEnd()
-        },
-      }),
-    )
-  }
+        })
+        .catch((error) => console.log('Message fetching failed with error:', error))
+    },
+    [setMessages, scrollToEnd],
+  )
 
-  const listenForCall = (listnerID) => {
+  const listenForMessage = useCallback(
+    (listenerID) => {
+      CometChat.addMessageListener(
+        listenerID,
+        new CometChat.MessageListener({
+          onTextMessageReceived: (message) => {
+            setMessages((prevState) => [...prevState, message])
+            scrollToEnd()
+          },
+        }),
+      )
+    },
+    [setMessages, scrollToEnd],
+  )
+
+  const listenForCall = useCallback((listnerID) => {
     CometChat.addCallListener(
       listnerID,
       new CometChat.CallListener({
@@ -126,9 +140,9 @@ export const User = () => {
         },
       }),
     )
-  }
+  }, [])
 
-  const listFriends = () => {
+  const listFriends = useCallback(() => {
     const limit = 10
     const usersRequest = new CometChat.UsersRequestBuilder().setLimit(limit).friendsOnly(true).build()
 
@@ -138,7 +152,7 @@ export const User = () => {
       .catch((error) => {
         console.log('User list fetching failed with error:', error)
       })
-  }
+  }, [])
 
   const remFriend = (uid, fid) => {
     if (window.confirm('Are you sure?')) {
@@ -184,11 +198,6 @@ export const User = () => {
         alert('Added as friend successfully')
       })
       .catch((err) => console.error('error:' + err))
-  }
-
-  const scrollToEnd = () => {
-    const elmnt = document.getElementById('messages-container')
-    elmnt.scrollTop = elmnt.scrollHeight
   }
 
   const onSubmit = (e) => {
@@ -320,9 +329,7 @@ export const User = () => {
         setIsIncomingCall(false)
         setIsIncomingCall(false)
       })
-      .catch((error) => {
-        console.log('error', error)
-      })
+      .catch((error) => console.log('error', error))
   }
 
   useEffect(() => {
@@ -333,7 +340,7 @@ export const User = () => {
     listFriends(id)
 
     setCurrentUser(JSON.parse(localStorage.getItem('user')))
-  }, [id])
+  }, [id, getUser, getMessages, listenForMessage, listenForCall, listFriends])
 
   return (
     <div className="user">
