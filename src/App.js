@@ -1,20 +1,9 @@
 import { useState, useEffect } from 'react'
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Redirect,
-} from 'react-router-dom'
+import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom'
 import { onAuthStateChanged } from 'firebase/auth'
 
 import { Header, Sidebar } from './components'
-import {
-  // Channel,
-  Login,
-  // User,
-  Home,
-  // Add,
-} from './screens'
+import { Channel, Login, User, Home, Add } from './screens'
 
 import { auth } from './firebase'
 import './App.css'
@@ -42,9 +31,7 @@ function App() {
         auth ? (
           addStructure(Component, props)
         ) : (
-          <Redirect
-            to={{ pathname: '/login', state: { from: props.location } }}
-          />
+          <Redirect to={{ pathname: '/login', state: { from: props.location } }} />
         )
       }
     />
@@ -70,21 +57,14 @@ function App() {
     <div className="app">
       <Router>
         <Switch>
-          {/*<GuardedRoute*/}
-          {/*  path="/channels/:id"*/}
-          {/*  auth={isLoggedIn}*/}
-          {/*  component={Channel}*/}
-          {/*/>*/}
-
-          {/*<GuardedRoute path="/users/:id" auth={isLoggedIn} component={User} />*/}
-
-          {/*<GuardedRoute path="/add/channel" auth={isLoggedIn} component={Add} />*/}
+          <GuardedRoute path="/channels/:id" auth={isLoggedIn} component={Channel} />
+          <GuardedRoute path="/users/:id" auth={isLoggedIn} component={User} />
+          <GuardedRoute path="/add/channel" auth={isLoggedIn} component={Add} />
+          <GuardedRoute path="/" auth={isLoggedIn} component={Home} />
 
           <Route path="/login">
             <Login />
           </Route>
-
-          <GuardedRoute path="/" auth={isLoggedIn} component={Home} />
         </Switch>
       </Router>
     </div>
