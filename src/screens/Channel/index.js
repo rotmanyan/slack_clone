@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useParams, useHistory } from 'react-router-dom'
 import { CometChat } from '@cometchat-pro/chat'
 import StarBorderOutlinedIcon from '@material-ui/icons/StarBorderOutlined'
@@ -68,7 +68,7 @@ export const Channel = () => {
       })
   }
 
-  const getMembers = (guid) => {
+  const getMembers = useCallback((guid) => {
     const GUID = guid
     const limit = 30
     const groupMemberRequest = new CometChat.GroupMembersRequestBuilder(GUID).setLimit(limit).build()
@@ -79,18 +79,21 @@ export const Channel = () => {
       .catch((error) => {
         console.log('Group Member list fetching failed with exception:', error)
       })
-  }
+  }, [])
 
-  const getChannel = (guid) => {
-    CometChat.getGroup(guid)
-      .then((group) => setChannel(group))
-      .catch((error) => {
-        if (error.code === 'ERR_GUID_NOT_FOUND') history.push('/')
-        console.log('Group details fetching failed with exception:', error)
-      })
-  }
+  const getChannel = useCallback(
+    (guid) => {
+      CometChat.getGroup(guid)
+        .then((group) => setChannel(group))
+        .catch((error) => {
+          if (error.code === 'ERR_GUID_NOT_FOUND') history.push('/')
+          console.log('Group details fetching failed with exception:', error)
+        })
+    },
+    [history],
+  )
 
-  const listenForMessage = (listenerID) => {
+  const listenForMessage = useCallback((listenerID) => {
     CometChat.addMessageListener(
       listenerID,
       new CometChat.MessageListener({
@@ -100,9 +103,9 @@ export const Channel = () => {
         },
       }),
     )
-  }
+  }, [])
 
-  const getMessages = (guid) => {
+  const getMessages = useCallback((guid) => {
     const limit = 50
 
     const messagesRequest = new CometChat.MessagesRequestBuilder().setLimit(limit).setGUID(guid).build()
@@ -114,7 +117,7 @@ export const Channel = () => {
         scrollToEnd()
       })
       .catch((error) => console.log('Message fetching failed with error:', error))
-  }
+  }, [])
 
   const scrollToEnd = () => {
     const elmnt = document.getElementById('messages-container')
@@ -172,7 +175,7 @@ export const Channel = () => {
     )
   }
 
-  const listenForCall = (listnerID) => {
+  const listenForCall = useCallback((listnerID) => {
     CometChat.addCallListener(
       listnerID,
       new CometChat.CallListener({
@@ -203,7 +206,7 @@ export const Channel = () => {
         },
       }),
     )
-  }
+  }, [])
 
   const startCall = (call) => {
     const sessionId = call.sessionId
@@ -341,7 +344,7 @@ export const Channel = () => {
     listenForCall(id)
 
     setCurrentUser(JSON.parse(localStorage.getItem('user')))
-  }, [id])
+  }, [id, getChannel, getMessages, getMembers, listenForCall, listenForMessage])
 
   return (
     <div className="channel">
